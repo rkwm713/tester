@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON Processor</title>
+  <!-- Import Saira font from Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Saira:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Saira', 'Neuton';
+      background: url('static/images/bg.svg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+    .container {
+      background-color: #fcfcfc;
+      border-radius: 50px;
+      padding: 50px;
+      padding-bottom: 25px;
+      padding-top: 30px;
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+      animation: fadeIn 0.6s ease-out;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      color: #04458D;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      margin: 0;
+      padding: 0;
+    }
+    p {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .file-input-container {
+      position: relative;
+      background-color: #D9E8F7;
+      border: 2px dashed #4E525B;
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+    .file-input-container.drag-over {
+      border-color: #FFFF00;
+      background-color: #6cee93;
+      border: 2px double #0A3251;
+    }
+    .file-input-container.file-dropped {
+      border-color: #0A3251;
+      background-color: #6cee93;
+      border: 2px double #0A3251;
+    }
+    input[type="file"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .file-input-label {
+      font-size: 15px;
+      color: #4E525B;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .file-input-label::before {
+      content: '📎';
+      font-size: 24px;
+    }
+    button {
+      background: linear-gradient(135deg, #04458D 0%, #0A3251 100%);
+      color: white;
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    button:hover {
+      background: linear-gradient(135deg, #FFFF00 50px, #FFFF00 50px);
+      transform: translateY(-5px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+      color: #04458D;
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .footer {
+      margin-top: 45px;
+      text-align: center;
+    }
+    .footer-logo {
+      width: 200px;
+      height: auto;
+      padding-bottom: 3px;
+      padding-top: 1px;
+    }
+    @media (max-width: 480px) {
+      .container {
+        padding: 24px;
+      }
+      h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Upload File</h1>
+    <p>Select a .json file to process</p>
+    <form id="upload-form">
+      <div class="file-input-container" id="file-input-container">
+        <input type="file" name="file" accept=".json" required id="file-input">
+        <div class="file-input-label">
+          <span>Choose a file or drag it here</span>
+          <span style="font-size: 13px">Supports .json files</span>
+        </div>
+      </div>
+      <button type="submit">Process File</button>
+    </form>
+    <div class="footer">
+      <img src="static/images/bot.png" alt="Company Logo" class="footer-logo">
+    </div>
+  </div>
+
+  <script>
+    // Determine messenger type based on owner ID
+    function getMessengerType(ownerId) {
+      const ownerCompany = ownerId.split('/')[0].toUpperCase();
+      
+      const messengerMap = {
+        'COMCAST': {
+          size: '1/4" EHS',
+          clientItemAlias: 'MESSENGER_1/4_EHS_7/0'
+        },
+        'CENTURYLINK': {
+          size: '10M EHS',
+          clientItemAlias: 'MESSENGER_10M_EHS_7/0'
+        },
+        'BRIGHTSPEED': {
+          size: '10M EHS',
+          clientItemAlias: 'MESSENGER_10M_EHS_7/0'
+        },
+        'GIGAPOWER': {
+          size: '6M EHS',
+          clientItemAlias: 'MESSENGER_6M_EHS_7/0'
+        },
+        'UPN': {
+          size: '144ct SS',
+          clientItemAlias: 'MESSENGER_144CT_SS_1/0'
+        },
+        'VERIZON': {
+          size: '144ct SS',
+          clientItemAlias: 'MESSENGER_144CT_SS_1/0'
+        },
+        'VZW': {
+          size: '144ct SS',
+          clientItemAlias: 'MESSENGER_144CT_SS_1/0'
+        },
+        'VEXUS': {
+          size: '1/4" EHS',
+          clientItemAlias: 'MESSENGER_1/4_EHS_7/0'
+        },
+        'VEX': {
+          size: '1/4" EHS',
+          clientItemAlias: 'MESSENGER_1/4_EHS_7/0'
+        }
+      };
+  
+      const defaultMessenger = {
+        size: '6.6M EHS',
+        clientItemAlias: 'MESSENGER_6.6M_EHS_7/0'
+      };
+  
+      for (const company in messengerMap) {
+        if (ownerCompany.includes(company)) {
+          return messengerMap[company];
+        }
+      }
+      
+      return defaultMessenger;
+    }
+  
+    // Convert communication wire to bundle format
+    function convertCommunicationWire(wire, bundleComponents) {
+      if (wire.owner?.industry === 'COMMUNICATION') {
+        const fiberCountMatch = wire.clientItem?.size?.match(/(\d+)ct/);
+        const fiberCount = fiberCountMatch ? fiberCountMatch[1] : '72';
+        const messenger = getMessengerType(wire.owner.id);
+  
+        const bundleComponent = bundleComponents.find(bc => 
+          bc.Size.startsWith(fiberCount + 'ct') &&
+          bc.Groups.includes(wire.owner.id.split('/')[0])
+        ) || bundleComponents.find(bc => bc.Size.startsWith(fiberCount + 'ct'));
+  
+        const diameter = bundleComponent ? bundleComponent['Diameter (in)'] : 0.398;
+        const weight = bundleComponent ? bundleComponent['Weight per Length (lbf/ft)'] : 1.0;
+        const componentSize = bundleComponent ? bundleComponent.Size : `${fiberCount} Count Fiber`;
+  
+        wire.usageGroup = 'COMMUNICATION';
+        wire.clientItem = {
+          size: 'Communication Bundle',
+          type: 'BUNDLE',
+          group: 'COMMUNICATION',
+          messenger: {
+            size: messenger.size,
+            clientItemAlias: messenger.clientItemAlias
+          },
+          bundleComponents: [
+            {
+              size: componentSize,
+              clientItemAlias: `FIBER_${fiberCount}`
+            }
+          ],
+          diameter: {
+            unit: 'INCH',
+            value: diameter
+          },
+          weight: {
+            unit: 'POUND_FORCE_PER_FOOT',
+            value: weight
+          }
+        };
+      }
+      return wire;
+    }
+  
+    // Load and parse BundleComponents.json
+    async function loadBundleComponents() {
+      try {
+        const response = await fetch('ClientFileJSON/BundleComponents.json');
+        return await response.json();
+      } catch (error) {
+        console.error('Error loading BundleComponents:', error);
+        return [];
+      }
+    }
+  
+    // Update fixEquipmentType to ensure a clientItem exists and set a default type
+    function fixEquipmentType(equipment) {
+      if (!equipment.clientItem || typeof equipment.clientItem !== 'object') {
+        equipment.clientItem = { type: 'EQUIPMENT' };
+      } else if (!equipment.clientItem.type) {
+        equipment.clientItem.type = 'EQUIPMENT';
+      }
+    }
+  
+    function fixInsulatorClientItem(insulator) {
+      if (insulator.clientItem && typeof insulator.clientItem === 'object') {
+        insulator.clientItem = insulator.clientItem.size || 'INSULATOR';
+      }
+    }
+  
+    function fixPoleClientItem(pole) {
+      if (pole.clientItem && typeof pole.clientItem === 'object') {
+        if (!pole.clientItem.height) pole.clientItem.height = 40;
+        if (!pole.clientItem.species) pole.clientItem.species = 'Southern Yellow Pine';
+        if (!pole.clientItem.classOfPole) pole.clientItem.classOfPole = 4;
+      }
+    }
+  
+    function fixAnchorClientItem(anchor) {
+      if (anchor.clientItem && typeof anchor.clientItem === 'object') {
+        anchor.clientItem = anchor.clientItem.size || 'ANCHOR';
+      }
+    }
+  
+    function fixCrossArmClientItem(crossArm) {
+      if (crossArm.clientItem && typeof crossArm.clientItem === 'object') {
+        crossArm.clientItem = crossArm.clientItem.size || 'CROSSARM';
+      }
+    }
+  
+    function processStructure(structure) {
+      if (!structure) return;
+    
+      // Always ensure a parent with mapLocation exists
+      structure.parent = {
+        mapLocation: {
+          type: "Point",
+          coordinates: structure.geographicCoordinate?.coordinates || [0, 0]
+        }
+      };
+    
+      // Process equipments
+      if (structure.equipments) {
+        structure.equipments.forEach(equipment => {
+          if (!equipment.clientItem) {
+            equipment.clientItem = {
+              type: "EQUIPMENT",
+              size: equipment.size || "",
+              group: equipment.type?.industry || "UTILITY"
+            };
+          } else if (!equipment.clientItem.type) {
+            equipment.clientItem.type = "EQUIPMENT";
+          }
+        });
+      }
+    
+      // Process insulators
+      if (structure.insulators) {
+        structure.insulators.forEach(insulator => {
+          if (insulator.clientItem && typeof insulator.clientItem === 'object') {
+            insulator.clientItem = insulator.clientItem.size || 'INSULATOR';
+          }
+        });
+      }
+    
+      // Process pole
+      if (structure.pole) {
+        if (structure.pole.clientItem && typeof structure.pole.clientItem === 'object') {
+          const defaultPole = {
+            height: 40,
+            species: 'Southern Yellow Pine',
+            classOfPole: 4
+          };
+          structure.pole.clientItem = {
+            ...defaultPole,
+            ...structure.pole.clientItem
+          };
+        }
+      }
+    
+      // Process anchors
+      if (structure.anchors) {
+        structure.anchors.forEach(anchor => {
+          if (anchor.clientItem && typeof anchor.clientItem === 'object') {
+            anchor.clientItem = anchor.clientItem.size || 'ANCHOR';
+          }
+        });
+      }
+    
+      // Process crossArms
+      if (structure.crossArms) {
+        structure.crossArms.forEach(crossArm => {
+          if (crossArm.clientItem && typeof crossArm.clientItem === 'object') {
+            crossArm.clientItem = crossArm.clientItem.size || 'CROSSARM';
+          }
+        });
+      }
+    }
+  
+    // Helper to update components (wires, insulators, etc.) in the Proposed design
+    function handleComponents(proposedStructure, remedyStructure, componentKey) {
+      if (!proposedStructure || !remedyStructure) return;
+      if (!proposedStructure[componentKey]) return;
+  
+      // Filter communication items in the proposed design
+      proposedStructure[componentKey] = proposedStructure[componentKey].filter(item =>
+        item && item.owner && item.owner.industry === 'COMMUNICATION'
+      );
+  
+      const remedyItems = remedyStructure[componentKey] || [];
+      remedyItems.forEach(item => {
+        if (item && item.owner?.industry === 'COMMUNICATION' && item.id) {
+          const index = proposedStructure[componentKey].findIndex(i => i.id === item.id);
+          if (index >= 0) {
+            proposedStructure[componentKey][index] = item;
+          } else {
+            proposedStructure[componentKey].push(item);
+          }
+        }
+      });
+    }
+  
+    // Create Proposed design layer by copying Existing and filtering Remedy
+    function createProposedLayer(existingDesign, remedyDesign) {
+      const proposedDesign = JSON.parse(JSON.stringify(existingDesign));
+      proposedDesign.label = "Proposed";
+      
+      if (proposedDesign.structure && remedyDesign.structure) {
+        // Copy coordinates from existing design
+        proposedDesign.geographicCoordinate = existingDesign.geographicCoordinate;
+        proposedDesign.structure.geographicCoordinate = existingDesign.geographicCoordinate;
+    
+        // Update components
+        handleComponents(proposedDesign.structure, remedyDesign.structure, 'wires');
+        handleComponents(proposedDesign.structure, remedyDesign.structure, 'insulators');
+        handleComponents(proposedDesign.structure, remedyDesign.structure, 'equipments');
+        handleComponents(proposedDesign.structure, remedyDesign.structure, 'crossArms');
+        
+        // Ensure parent and mapLocation
+        processStructure(proposedDesign.structure);
+      }
+      return proposedDesign;
+    }
+  
+    // Consolidated processJson
+    function processJson(data, bundleComponents) {
+      if (typeof data !== 'object' || data === null) return data;
+    
+      // Process designs at the locations level
+      if (data.leads && data.leads.length > 0 && Array.isArray(data.leads[0].locations)) {
+        data.leads[0].locations.forEach(location => {
+          if (location.designs && location.designs.length > 0) {
+            const locationCoords = location.geographicCoordinate?.coordinates || [0, 0];
+            
+            location.designs.forEach(design => {
+              // Ensure design has geographic coordinates
+              if (!design.geographicCoordinate) {
+                design.geographicCoordinate = {
+                  type: "Point",
+                  coordinates: locationCoords
+                };
+              }
+              
+              // Process the structure and ensure it has a parent with mapLocation
+              if (design.structure) {
+                design.structure.geographicCoordinate = design.geographicCoordinate;
+                processStructure(design.structure);
+              }
+            });
+    
+            const existingDesign = location.designs.find(d => d.label === "Existing");
+            const remedyDesign = location.designs.find(d => d.label === "Proposed");
+            if (existingDesign && remedyDesign && remedyDesign.structure) {
+              const proposedDesign = createProposedLayer(existingDesign, remedyDesign);
+              remedyDesign.label = "Remedy";
+              location.designs.push(proposedDesign);
+            }
+          }
+        });
+      }
+    
+      // Process structure if exists
+      if (data.structure) {
+        processStructure(data.structure);
+      }
+    
+      // Continue with recursive processing
+      if (Array.isArray(data)) {
+        data.forEach(item => processJson(item, bundleComponents));
+      } else {
+        for (const key in data) {
+          if (Object.prototype.hasOwnProperty.call(data, key)) {
+            processJson(data[key], bundleComponents);
+          }
+        }
+      }
+      return data;
+    }
+  
+    // Event listeners and form handling
+    const fileInputContainer = document.getElementById('file-input-container');
+    const fileInput = document.getElementById('file-input');
+    const form = document.getElementById('upload-form');
+  
+    fileInputContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileInputContainer.classList.add('drag-over');
+    });
+  
+    fileInputContainer.addEventListener('dragleave', () => {
+      fileInputContainer.classList.remove('drag-over');
+    });
+  
+    fileInputContainer.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileInputContainer.classList.remove('drag-over');
+      fileInputContainer.classList.add('file-dropped');
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+      }
+    });
+  
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length > 0) {
+        fileInputContainer.classList.add('file-dropped');
+      }
+    });
+  
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!fileInput.files.length) {
+        alert("Please choose a file");
+        return;
+      }
+  
+      try {
+        const bundleComponents = await loadBundleComponents();
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+  
+        reader.onload = function(event) {
+          try {
+            const data = JSON.parse(event.target.result);
+            const processedData = processJson(data, bundleComponents);
+            const processedJson = JSON.stringify(processedData, null, 2);
+            const blob = new Blob([processedJson], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+  
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.download = "processed_" + file.name;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+  
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          } catch (error) {
+            alert("Error processing JSON: " + error.message);
+          }
+        };
+  
+        reader.readAsText(file);
+      } catch (error) {
+        alert("Error loading bundle components: " + error.message);
+      }
+    });
+  </script>
+
+</body>
+</html>
